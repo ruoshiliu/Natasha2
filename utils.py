@@ -20,7 +20,7 @@ def calculate_hessian(loss, model):
 
 # eval Hessian matrix
 def eval_hessian(loss, model):
-    loss_grad = torch.autograd.grad(loss, model.parameters(), create_graph=True, allow_unused=True, retain_graph=True)
+    loss_grad = torch.autograd.grad(loss, model.parameters(), create_graph=True)
     cnt = 0
     for g in loss_grad:
         g_vector = g.contiguous().view(-1) if cnt == 0 else torch.cat([g_vector, g.contiguous().view(-1)])
@@ -28,13 +28,16 @@ def eval_hessian(loss, model):
     l = g_vector.size(0)
     hessian = torch.zeros(l, l)
     for idx in range(l):
-        grad2rd = autograd.grad(g_vector[idx], model.parameters(), create_graph=True, allow_unused=True, retain_graph=True)
+        grad2rd = torch.autograd.grad(g_vector[idx], model.parameters(), create_graph=True)
         cnt = 0
         for g in grad2rd:
             g2 = g.contiguous().view(-1) if cnt == 0 else torch.cat([g2, g.contiguous().view(-1)])
             cnt = 1
         hessian[idx] = g2
-    return hessian.cpu().data.numpy()
+    del loss_grad, grad2rd, g2
+    hessian = hessian.detach()
+    torch.cuda.empty_cache()
+    return hessian
 
 def calculate_metric(metric_fn, true_y, pred_y):
     # multi class problems need to have averaging method
@@ -59,3 +62,4 @@ def get_data_loaders(train_batch_size, val_batch_size):
     val_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=False),
                             batch_size=val_batch_size, shuffle=False, num_workers=16)
     return train_loader, val_loader
+
