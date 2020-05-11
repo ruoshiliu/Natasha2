@@ -19,12 +19,12 @@ def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
                     epochs=30, train_portion=0.1, train_batch=64,
                     val_batch=64):
     ''' Wrapper method to perform 1 experiment on Mnist digit classification
-    optim        : optimization algorithm to used ['Natasha2', 'Natasha1', 'Adam', 'SGD']
+    optim        : optimization algorithm to used ['Natasha2', 'Natasha1', 'Adam', 'SGD', 'SGD_momentum']
     cuda         : which cuda device to use
     model        : which model to use ['MnistLeNet', 'MnistResNet']
     train_portion: portion of training dataset to use
     '''
-    natasha1_param = {'ALPHA': 0.1, 'B': 27, 'P': 9, 'SIGMA': 0}
+    natasha1_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0}
     natasha2_param = {'ALPHA': 1, 'B': 1600, 'P': 20, 'SIGMA': 0.01, 'DELTA': 0.01, 'ETA': 0.1}
     
     start_ts = time.time()
@@ -47,12 +47,14 @@ def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
                              p=natasha2_param['P'], sigma = natasha2_param['SIGMA'], 
                              delta=natasha2_param['DELTA'], eta =natasha2_param['ETA'])
     elif algorithm == 'Natasha1':
-        optimizer = Natasha1(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
-                              p=natasha2_param['P'], sigma = natasha2_param['SIGMA'])
+        optimizer = Natasha1(model.parameters(), alpha=natasha1_param['ALPHA'], B=natasha1_param['B'],
+                              p=natasha1_param['P'], sigma = natasha1_param['SIGMA'])
     elif algorithm == 'Adam':
         optimizer = optim.Adam(model.parameters())
     elif algorithm == 'SGD':
-        optimizer = optim.SGD(model.parameters(), lr=0.01)
+        optimizer = optim.SGD(model.parameters(), lr = 0.01)
+    elif algorithm == 'SGD_momentum':
+        optimizer = optim.SGD(model.parameters(), lr = 0.01, momentum = 0.9)
     
     print('[train.py] using optimization algorithm %s' % algorithm)
     print('[train.pu] training with %d%% of data' % int(train_portion * 100))
