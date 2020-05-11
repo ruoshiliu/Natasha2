@@ -51,9 +51,10 @@ def get_data_loaders(train_batch_size, val_batch_size):
     return train_loader, val_loader
 
 def oja_criterion(delta, grad_0,model, X, y, criterion, eta):
-    v = torch.randn(sum(p.numel() for p in model.parameters()),dtype = torch.float32, device = "cuda")
+    n_param = sum(p.numel() for p in model.parameters())
+    v = torch.randn(n_param,dtype = torch.float32, device = "cuda")
     for i in range(int(1/(delta ** 2))):
-        v = v - eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
+        v = torch.flatten(torch.mm(torch.ones((n_param,n_param)), v)) - eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
         v = v / torch.norm(v)
     kick_criterion = torch.dot(v, hessian_w_approx(model, X,y, criterion, v, grad_0))
     return kick_criterion, v
@@ -77,4 +78,3 @@ def get_grad(model, X, y, criterion):
     loss.backward(retain_graph=True)
     grads = torch.cat([param.grad.view(-1) for param in model.parameters()])
     return grads
-
