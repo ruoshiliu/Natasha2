@@ -56,7 +56,7 @@ class Natasha2(torch.optim.Optimizer):
                     for s in range(group['p']):
                         x_list = [x_h]
                         for t in range(int(group['B']/group['p'])):
-                            d_tmp = d_p + 2*group['sigma']*(x_list[t] - x_h)
+                            d_tmp = d_p + group['sigma']*(x_list[t] - x_h)
                             x_list.append(x_list[t].add_(d_tmp, alpha = -group['alpha']))
                         temp = torch.stack(x_list)
                         x_h = torch.mean(temp, dim=0)

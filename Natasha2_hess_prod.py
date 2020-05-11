@@ -9,13 +9,13 @@ class Natasha2_hp(torch.optim.Optimizer):
         if B < 0.0:
             raise ValueError("Invalid B value: {}".format(B))
         if p < 0.0:
-            raise ValueError("Invalid p value: {}".format(p)) 
+            raise ValueError("Invalid p value: {}".format(p))
         if sigma < 0.0:
-            raise ValueError("Invalid sigma value: {}".format(sigma)) 
+            raise ValueError("Invalid sigma value: {}".format(sigma))
         if delta < 0.0:
-            raise ValueError("Invalid delta value: {}".format(delta)) 
+            raise ValueError("Invalid delta value: {}".format(delta))
         if eta < 0.0:
-            raise ValueError("Invalid eta value: {}".format(eta)) 
+            raise ValueError("Invalid eta value: {}".format(eta))
         self.delta = delta
         self.eta = eta
         defaults = dict(params=params, alpha=alpha, B=B, p=p, sigma=sigma, delta=delta, eta=eta)
@@ -44,9 +44,8 @@ class Natasha2_hp(torch.optim.Optimizer):
                     for s in range(group['p']):
                         x_list = [x_h]
                         for t in range(int(group['B']/group['p'])):
-                            d_tmp = d_p + 2*group['sigma']*(x_list[t] - x_h)
+                            d_tmp = d_p + group['sigma']*(x_list[t] - x_h)
                             x_list.append(x_list[t].add_(d_tmp, alpha = -group['alpha']))
                         temp = torch.stack(x_list)
                         x_h = torch.mean(temp, dim=0)
                     p=x_h
-
