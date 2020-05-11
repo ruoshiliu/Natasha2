@@ -5,19 +5,6 @@ from torchvision.transforms import Compose, ToTensor, Normalize, Resize, Lambda
 from torch.utils.data import DataLoader
 import inspect
 
-def calculate_hessian(loss, model):
-    var = model.parameters()
-    temp = []
-    grads = torch.autograd.grad(loss, var, create_graph=True)[0]
-    grads = torch.cat([g.view(-1) for g in grads])
-    
-    for grad in grads:
-        grad2 = torch.autograd.grad(grad, var, retain_graph=True, create_graph=True)
-        temp.append(grad2)
-    return np.array(temp)
-
-
-
 # eval Hessian matrix
 def eval_hessian(loss, model):
     loss_grad = torch.autograd.grad(loss, model.parameters(), create_graph=True)
@@ -54,7 +41,7 @@ def print_scores(p, r, f1, a, batch_size):
 def get_data_loaders(train_batch_size, val_batch_size):
     mnist = MNIST(download=True, train=True, root=".").train_data.float()
 
-    data_transform = Compose([Resize(32, interpolation=2), ToTensor(), Normalize((mnist.mean()/255,), (mnist.std()/255,))])
+    data_transform = Compose([Resize(32, interpolation=2), ToTensor()])
 
     train_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=True),
                               batch_size=train_batch_size, shuffle=True, num_workers=16)
@@ -62,4 +49,32 @@ def get_data_loaders(train_batch_size, val_batch_size):
     val_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=False),
                             batch_size=val_batch_size, shuffle=False, num_workers=16)
     return train_loader, val_loader
+
+def oja_criterion(delta, grad_0,model, X, y, criterion, eta):
+    v = torch.randn(sum(p.numel() for p in model.parameters()),dtype = torch.float32, device = "cuda")
+    for i in range(int(1/(delta ** 2))):
+        v = v - eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
+        v = v / torch.norm(v)
+    kick_criterion = torch.dot(v, hessian_w_approx(model, X,y, criterion, v, grad_0))
+    return kick_criterion, v
+
+def hessian_w_approx(model, X, y, criterion, v, grad_0 ,q = 0.0001):
+    model_copy = type(model)().cuda() # get a new instance
+    model_copy.load_state_dict(model.state_dict())
+    v_update(model_copy, v, q)
+    grad_1 = get_grad(model_copy, X, y, criterion)
+    return (grad_1 - grad_0)/q
+
+def v_update(model, v, q):
+    vec = torch.nn.utils.parameters_to_vector(model.parameters())
+    vec.add_(v, alpha = q)
+    torch.nn.utils.vector_to_parameters(vec, model.parameters())
+
+def get_grad(model, X, y, criterion):
+    model.zero_grad()
+    outputs = model(X)
+    loss = criterion(outputs, y)
+    loss.backward(retain_graph=True)
+    grads = torch.cat([param.grad.view(-1) for param in model.parameters()])
+    return grads
 

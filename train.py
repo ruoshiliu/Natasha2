@@ -10,6 +10,7 @@ from torchvision.transforms import Compose, ToTensor, Normalize, Resize, Lambda
 from torch.utils.data import DataLoader
 from Natasha1 import Natasha1
 from Natasha2 import Natasha2
+from Natasha2_hess_prod import Natasha2_hp
 from MnistLeNet import *
 from MnistResNet import *
 from utils import *
@@ -25,7 +26,7 @@ def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
     train_portion: portion of training dataset to use
     '''
     natasha1_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0}
-    natasha2_param = {'ALPHA': 1, 'B': 1600, 'P': 20, 'SIGMA': 0.01, 'DELTA': 0.01, 'ETA': 0.1}
+    natasha2_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0.01, 'DELTA': 0.05, 'ETA': 0.1}
     
     start_ts = time.time()
     if torch.cuda.is_available():
@@ -44,6 +45,10 @@ def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
 
     if algorithm == 'Natasha2':
         optimizer = Natasha2(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
+                             p=natasha2_param['P'], sigma = natasha2_param['SIGMA'], 
+                             delta=natasha2_param['DELTA'], eta =natasha2_param['ETA'])
+    elif algorithm == "Natasha2_hp":
+        optimizer = Natasha2_hp(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
                              p=natasha2_param['P'], sigma = natasha2_param['SIGMA'], 
                              delta=natasha2_param['DELTA'], eta =natasha2_param['ETA'])
     elif algorithm == 'Natasha1':
@@ -93,6 +98,10 @@ def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
                 loss.backward(retain_graph=True)
                 if algorithm == 'Natasha2':
                     optimizer.step(eval_hessian(loss, model))
+                if algorithm == 'Natasha2_hp':
+                    grads_0 = torch.cat([param.grad.view(-1) for param in model.parameters()])
+                    kick_criterion, v = oja_criterion(optimizer.delta, grads_0,model, X, y, criterion, eta = optimizer.eta)
+                    optimizer.step(model, kick_criterion, v)
                 else:
                     optimizer.step()
 
