@@ -4,6 +4,7 @@ from torch import nn, optim
 from torchvision.transforms import Compose, ToTensor, Normalize, Resize, Lambda
 from torch.utils.data import DataLoader
 import inspect
+import torchvision.transforms as transforms
 
 # eval Hessian matrix
 def eval_hessian(loss, model):
@@ -50,13 +51,24 @@ def get_data_loaders(train_batch_size, val_batch_size, dataset='MNIST'):
         val_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=False),
                                 batch_size=val_batch_size, shuffle=False, num_workers=16)
     elif dataset == 'CIFAR':
-        transform = Compose([ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        transform_train = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
 
-        trainset = CIFAR10(root='./data', train=True, download=True, transform=transform)
+        # Normalize the test set same as training set without augmentation
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+
+        trainset = CIFAR10(root='./data', train=True, download=True, transform=transform_train)
         train_loader = DataLoader(trainset, batch_size=train_batch_size,
                                                   shuffle=True, num_workers=16)
 
-        testset = CIFAR10(root='./data', train=False, download=True, transform=transform)
+        testset = CIFAR10(root='./data', train=False, download=True, transform=transform_test)
         val_loader = DataLoader(testset, batch_size=val_batch_size,
                                          shuffle=False, num_workers=16)
     return train_loader, val_loader
