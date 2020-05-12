@@ -24,9 +24,9 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
     net          : which net to use ['MnistLeNet', 'MnistResNet', 'CifarLeNet', 'CifarResNet']
     train_portion: portion of training dataset to use
     '''
-    natasha1_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0}
+    natasha1_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0.5}
     natasha2_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0.01, 'DELTA': 0.1, 'ETA': 0.1}
-    
+
     start_ts = time.time()
     if torch.cuda.is_available():
         device = torch.device("cuda:%d" % cuda)
@@ -43,16 +43,16 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
         model = CifarLeNet().to(device)
     elif net == 'CifarResNet':
         model = CifarResNet().to(device)
-        
+
 
     train_loader, val_loader = get_data_loaders(train_batch, val_batch, dataset=dataset)
     if algorithm == 'Natasha2':
         optimizer = Natasha2(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
-                             p=natasha2_param['P'], sigma = natasha2_param['SIGMA'], 
+                             p=natasha2_param['P'], sigma = natasha2_param['SIGMA'],
                              delta=natasha2_param['DELTA'], eta =natasha2_param['ETA'])
     elif algorithm == "Natasha2_hp":
         optimizer = Natasha2_hp(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
-                             p=natasha2_param['P'], sigma = natasha2_param['SIGMA'], 
+                             p=natasha2_param['P'], sigma = natasha2_param['SIGMA'],
                              delta=natasha2_param['DELTA'], eta =natasha2_param['ETA'])
     elif algorithm == 'Natasha1':
         optimizer = Natasha1(model.parameters(), alpha=natasha1_param['ALPHA'], B=natasha1_param['B'],
@@ -63,11 +63,11 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
         optimizer = optim.SGD(model.parameters(), lr = 0.01)
     elif algorithm == 'SGD_momentum':
         optimizer = optim.SGD(model.parameters(), lr = 0.01, momentum = 0.9)
-    
+
     print('[train.py] using optimization algorithm %s' % algorithm)
     print('[train.pu] training with %d%% of data' % int(train_portion * 100))
     optimizer.zero_grad()
-    criterion = nn.CrossEntropyLoss() 
+    criterion = nn.CrossEntropyLoss()
 
     losses = []
     batches = len(train_loader)
@@ -86,7 +86,7 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
 
         progress = tqdm(enumerate(train_loader), desc="Loss: ", total=batches)
 
-        # ----------------- TRAINING  -------------------- 
+        # ----------------- TRAINING  --------------------
         # set model to training
         model.train()
 
@@ -117,7 +117,7 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
         # releasing unceseccary memory in GPU
         torch.cuda.empty_cache()
 
-        # ----------------- VALIDATION  ----------------- 
+        # ----------------- VALIDATION  -----------------
         val_losses = 0
         precision, recall, f1, accuracy = [], [], [], []
 
@@ -131,7 +131,7 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
                 predicted_classes = torch.max(outputs, 1)[1] # get class from network's prediction
 
                 # calculate P/R/F1/A metrics for batch
-                for acc, metric in zip((precision, recall, f1, accuracy), 
+                for acc, metric in zip((precision, recall, f1, accuracy),
                                        (precision_score, recall_score, f1_score, accuracy_score)):
                     acc.append(calculate_metric(metric, y.cpu(), predicted_classes.cpu()))
 
@@ -148,8 +148,3 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
     learning_curves = {'train_loss': train_loss, 'validation_loss': validation_loss, 'precision': precision_list,
                        'recall': recall_list, 'F1': F1_list, 'accuracy': accuracy_list}
     return learning_curves
-                       
-                       
-                       
-                       
-                       
