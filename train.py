@@ -11,18 +11,17 @@ from torch.utils.data import DataLoader
 from Natasha1 import Natasha1
 from Natasha2 import Natasha2
 from Natasha2_hess_prod import Natasha2_hp
-from MnistLeNet import *
-from MnistResNet import *
+from models import *
 from utils import *
 import random
 
-def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
+def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
                     epochs=30, train_portion=0.1, train_batch=64,
-                    val_batch=64):
+                    val_batch=64, dataset='MNIST'):
     ''' Wrapper method to perform 1 experiment on Mnist digit classification
     optim        : optimization algorithm to used ['Natasha2', 'Natasha1', 'Adam', 'SGD', 'SGD_momentum']
     cuda         : which cuda device to use
-    model        : which model to use ['MnistLeNet', 'MnistResNet']
+    net          : which net to use ['MnistLeNet', 'MnistResNet', 'CifarLeNet', 'CifarResNet']
     train_portion: portion of training dataset to use
     '''
     natasha1_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0}
@@ -36,12 +35,17 @@ def train_val_Mnist(algorithm='Natasha2', cuda=0, model='MnistLeNet',
         device = torch.device('cpu')
         print('[train.py] Using CPU...')
 
-    if model == 'MnistLeNet':
+    if net == 'MnistLeNet':
         model = MnistLeNet().to(device)
-    elif model == 'MnistResNet':
+    elif net == 'MnistResNet':
         model = MnistResNet().to(device)
+    elif net == 'CifarLeNet':
+        model = CifarLeNet().to(device)
+    elif net == 'CifarResNet':
+        model = CifarResNet().to(device)
+        
 
-    train_loader, val_loader = get_data_loaders(train_batch, val_batch)
+    train_loader, val_loader = get_data_loaders(train_batch, val_batch, dataset=dataset)
 
     if algorithm == 'Natasha2':
         optimizer = Natasha2(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
