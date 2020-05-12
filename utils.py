@@ -75,15 +75,16 @@ def get_data_loaders(train_batch_size, val_batch_size, dataset='MNIST'):
 
 def oja_criterion(delta, grad_0,model, X, y, criterion, eta):
     n_param = sum(p.numel() for p in model.parameters())
-    v = torch.randn(n_param,dtype = torch.float32, device = "cuda")
+    v = torch.randn(n_param,dtype = torch.float32)#, device = "cuda")
     for i in range(int(1/(delta ** 2))):
-        v = torch.flatten(torch.mm(torch.ones((n_param,n_param)), v)) - eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
+        v = torch.flatten(torch.matmul(v,torch.ones((n_param,n_param))))
+        v -= eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
         v = v / torch.norm(v)
     kick_criterion = torch.dot(v, hessian_w_approx(model, X,y, criterion, v, grad_0))
     return kick_criterion, v
 
 def hessian_w_approx(model, X, y, criterion, v, grad_0 ,q = 0.0001):
-    model_copy = type(model)().cuda() # get a new instance
+    model_copy = type(model)()#.cuda() # get a new instance
     model_copy.load_state_dict(model.state_dict())
     v_update(model_copy, v, q)
     grad_1 = get_grad(model_copy, X, y, criterion)

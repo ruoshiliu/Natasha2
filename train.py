@@ -25,7 +25,7 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
     train_portion: portion of training dataset to use
     '''
     natasha1_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0}
-    natasha2_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0.01, 'DELTA': 0.05, 'ETA': 0.1}
+    natasha2_param = {'ALPHA': 0.01, 'B': 27, 'P': 9, 'SIGMA': 0.01, 'DELTA': 0.1, 'ETA': 0.1}
     
     start_ts = time.time()
     if torch.cuda.is_available():
@@ -46,7 +46,6 @@ def train_val(algorithm='Natasha2', cuda=0, net='MnistLeNet',
         
 
     train_loader, val_loader = get_data_loaders(train_batch, val_batch, dataset=dataset)
-
     if algorithm == 'Natasha2':
         optimizer = Natasha2(model.parameters(), alpha=natasha2_param['ALPHA'], B=natasha2_param['B'],
                              p=natasha2_param['P'], sigma = natasha2_param['SIGMA'], 
