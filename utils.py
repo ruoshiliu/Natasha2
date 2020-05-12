@@ -1,5 +1,5 @@
 import torch
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST, CIFAR10
 from torch import nn, optim
 from torchvision.transforms import Compose, ToTensor, Normalize, Resize, Lambda
 from torch.utils.data import DataLoader
@@ -38,16 +38,27 @@ def print_scores(p, r, f1, a, batch_size):
     for name, scores in zip(("precision", "recall", "F1", "accuracy"), (p, r, f1, a)):
         print(f"\t{name.rjust(14, ' ')}: {sum(scores)/batch_size:.4f}")
 
-def get_data_loaders(train_batch_size, val_batch_size):
-    mnist = MNIST(download=True, train=True, root=".").train_data.float()
+def get_data_loaders(train_batch_size, val_batch_size, dataset='MNIST'):
+    if dataset == 'MNIST':
+        mnist = MNIST(download=True, train=True, root=".").train_data.float()
 
-    data_transform = Compose([Resize(32, interpolation=2), ToTensor()])
+        data_transform = Compose([Resize(32, interpolation=2), ToTensor()])
 
-    train_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=True),
-                              batch_size=train_batch_size, shuffle=True, num_workers=16)
+        train_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=True),
+                                  batch_size=train_batch_size, shuffle=True, num_workers=16)
 
-    val_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=False),
-                            batch_size=val_batch_size, shuffle=False, num_workers=16)
+        val_loader = DataLoader(MNIST(download=True, root=".", transform=data_transform, train=False),
+                                batch_size=val_batch_size, shuffle=False, num_workers=16)
+    elif dataset == 'CIFAR':
+        transform = Compose([ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+        trainset = CIFAR10(root='./data', train=True, download=True, transform=transform)
+        train_loader = DataLoader(trainset, batch_size=train_batch_size,
+                                                  shuffle=True, num_workers=16)
+
+        testset = CIFAR10(root='./data', train=False, download=True, transform=transform)
+        val_loader = DataLoader(testset, batch_size=val_batch_size,
+                                         shuffle=False, num_workers=16)
     return train_loader, val_loader
 
 def oja_criterion(delta, grad_0,model, X, y, criterion, eta):
