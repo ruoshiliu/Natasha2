@@ -77,8 +77,7 @@ def oja_criterion(delta, grad_0,model, X, y, criterion, eta):
     n_param = sum(p.numel() for p in model.parameters())
     v = torch.randn(n_param,dtype = torch.float32)#, device = "cuda")
     for i in range(int(1/(delta ** 2))):
-        v = torch.flatten(torch.matmul(v,torch.ones((n_param,n_param))))
-        v -= eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
+        v = torch.flatten(torch.matmul(v,torch.ones((n_param,n_param)))) - eta * hessian_w_approx(model,X,y,criterion,v, grad_0)
         v = v / torch.norm(v)
     kick_criterion = torch.dot(v, hessian_w_approx(model, X,y, criterion, v, grad_0))
     return kick_criterion, v
